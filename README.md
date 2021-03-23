@@ -30,6 +30,8 @@ communicating with a UR5 running Version 3.13 of their Polyscope software
 * Sphinx-Common
 * Sphinx-Doc
 
+Ensure that you chmod +x the script
+
 ---
 
 
