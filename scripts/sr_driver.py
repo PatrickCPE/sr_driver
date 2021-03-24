@@ -1,15 +1,18 @@
 #!/usr/bin/env python3
-#Note this will be 'python' if running on ubuntu 16
+# Note this will be 'python' if running on ubuntu 16
 
 import rospy
 from std_msgs.msg import String
 import rtde_io
 import rtde_receive
 
+
 class sr_driver():
     """
-    Basic Soft Robotics Gripper Class Wrapper
+    Basic Soft Robotics Gripper Class Wrapper - controls Gripper state machine via recieved state command and pressure
+    reading from the UR robot itself
     """
+
     def __init__(self):
         self.state = 'neutral'
         # Pressure's in 10ths of a psi for all pressure values
@@ -32,6 +35,8 @@ class sr_driver():
         self.state = self.validate_state(data.data)
         rospy.loginfo("Current Desired State: %s", data.data)
         rospy.loginfo("Current State: %s", self.state)
+        # Ensure you're updating analog read from proper analog pin for your gripper
+        self.pressure = self.rtde_receive.GetStandardAnalogInput0()
         self.update_robot_state()
 
     def update_robot_state(self):
@@ -50,8 +55,20 @@ class sr_driver():
         self.pressure = (constant factor) * (self.rtde_receive.GetStandardAnalogInput0())    #get the ADC value and
                                                                                              #convert to PSI
         '''
+        if (self.state == 'open') and (self.pressure <= self.min_pressure):  # Remain Open
+            pass
+        elif (self.state == 'open') and (self.pressure > self.min_pressure):  # Open Gripper
+            pass
+        elif (self.state == 'closed') and (self.pressure >= self.min_pressure):  # Remain Closed
+            pass
+        elif (self.state == 'closed') and (self.pressure < self.min_pressure):  # Close Gripper
+            pass
 
-        pass
+        # Tolerances are 5/10th of a psi for the neutral state
+        elif (self.state == 'neutral') and (not ((-5 < self.pressure) and (self.pressure < 5))):  # Move to Neutral
+            pass
+        elif (self.state == 'neutral') and ((-5 < self.pressure) and (self.pressure < 5)):  # Remain Neutral
+            pass
 
     def validate_state(self, desired_state):
         """
@@ -68,12 +85,10 @@ class sr_driver():
             return 'open'
         else:
             rospy.logerr("Invalid State Input: %s\tState will remain: %s", desired_state, self.state)
-            return self.state   #Returns the previous state, no update made
-
+            return self.state  # Returns the previous state, no update made
 
 
 if __name__ == '__main__':
     rospy.init_node('sr_gripper', anonymous=True)
     my_driver = sr_driver()
     rospy.spin()
-
