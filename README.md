@@ -16,8 +16,8 @@ follow installation and dependency instructions
 roscore &
 rosrun sr_driver sr_driver.py &
 
-rostopic pub /sr_gripper std_msgs/String "data: 'open'"
-rostopic pub /sr_gripper std_msgs/String "data: 'closed'"
+rostopic pub /sr_gripper std_msgs/String "data: 'open'"  
+rostopic pub /sr_gripper std_msgs/String "data: 'closed'"  
 
 ---
 
