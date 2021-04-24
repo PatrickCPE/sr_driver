@@ -10,7 +10,9 @@ import rtde_receive
 class sr_driver:
     """
     Basic Soft Robotics Gripper Class Wrapper - controls Gripper state machine via received state command and pressure
-    reading from the UR robot itself
+    reading from the UR robot itself.
+
+    If /sr_gripper receives "closed" system closes, if it receives "open" system opens
     """
 
     def __init__(self):
@@ -107,7 +109,6 @@ class sr_driver:
             counter = counter + 1
             rospy.sleep(0.01)
             self.voltage = self.rtde_receive.getStandardAnalogInput0()
-        rospy.sleep(0.1)
         self.codrive_stop()
 
     def codrive_close(self):
@@ -124,8 +125,6 @@ class sr_driver:
             counter = counter + 1
             rospy.sleep(0.01)
             self.voltage = self.rtde_receive.getStandardAnalogInput0()
-            print(type(self.voltage))
-            print(type(self.rtde_receive.getStandardAnalogInput0()))
         self.codrive_stop()
 
 

@@ -2,7 +2,18 @@
 
 ---
 
+! [Soft Robotics Gripper](soft_robotics_repo.jpg)
+
 ## Usage
+
+follow installation and dependency instructions
+
+roscore &
+rosrun sr_driver sr_driver.py &
+
+rostopic pub /sr_gripper std_msgs/String "data: 'open'"
+rostopic pub /sr_gripper std_msgs/String "data: 'closed'"
+
 
 ---
 
@@ -21,7 +32,7 @@ communicating with a UR5 running Version 3.13 of their Polyscope software
 ---
 
 ## Requirements
-* ur_rtde python version(https://pypi.org/project/ur-rtde/) (must compile from source with python 2.7 flag)
+* ur_rtde python version(https://pypi.org/project/ur-rtde/) (must compile from source with python 2.7 flag if on ubuntu 16. If using python 3 just install via pip.)
 * Python 2.7
 * ROS Kinetic
 
