@@ -41,12 +41,15 @@ communicating with a UR5 running Version 3.13 of their Polyscope software
 ## Installation
 
 ---
-install all the requirements listed in the section below
+install all the requirements listed in the section below then
 
 * git clone (this repo) ~/catkin_ws/src/
 * cd catkin_ws
 * catkin_make
 * chmod +x src/sr_driver/scripts/sr_driver
+
+This assumes you have the hardware installed as Soft Robotics suggests.  
+If changes are needed read this: <https://patrickcpe.github.io/projects/sr_driver.html>
 
 ---
 
