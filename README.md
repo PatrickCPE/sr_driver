@@ -43,10 +43,10 @@ communicating with a UR5 running Version 3.13 of their Polyscope software
 ---
 install all the requirements listed in the section below
 
-git clone (this repo) ~/catkin_ws/src/
-cd catkin_ws
-catkin_make
-chmod +x src/sr_driver/scripts/sr_driver
+* git clone (this repo) ~/catkin_ws/src/
+* cd catkin_ws
+* catkin_make
+* chmod +x src/sr_driver/scripts/sr_driver
 
 ---
 
