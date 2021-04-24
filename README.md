@@ -21,7 +21,7 @@ communicating with a UR5 running Version 3.13 of their Polyscope software
 ---
 
 ## Requirements
-* ur_rtde python version(https://pypi.org/project/ur-rtde/)
+* ur_rtde python version(https://pypi.org/project/ur-rtde/) (must compile from source with python 2.7 flag)
 * Python 2.7
 * ROS Kinetic
 

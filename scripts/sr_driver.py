@@ -7,29 +7,29 @@ import rtde_io
 import rtde_receive
 
 
-class sr_driver():
+class sr_driver:
     """
-    Basic Soft Robotics Gripper Class Wrapper - controls Gripper state machine via recieved state command and pressure
+    Basic Soft Robotics Gripper Class Wrapper - controls Gripper state machine via received state command and pressure
     reading from the UR robot itself
     """
 
     def __init__(self):
         self.state = 'neutral'
         self.previous_state = 'neutral'
-        # Pressure's in 10ths of a psi for all pressure values
-        #TODO remove pressures if no longer used
-        self.pressure = 0
-        self.max_pressure = 100
-        self.min_pressure = -50
 
         self.gripper_sub = rospy.Subscriber("sr_gripper", String, self.desired_state_sub_cb)
 
+        # Testing IPs
         self.rtde_io = rtde_io.RTDEIOInterface("10.0.0.65")
         self.rtde_receive = rtde_receive.RTDEReceiveInterface("10.0.0.65")
 
+        # Real System IPs
+        # self.rtde_io = rtde_io.RTDEIOInterface("10.0.9.3")
+        # self.rtde_receive = rtde_receive.RTDEReceiveInterface("10.0.9.3")
+
+        self.voltage = self.rtde_receive.getStandardAnalogInput0()
 
         # ADC values for the gripper states
-        self.voltage = self.rtde_receive.getStandardAnalogInput0()
         self.release_volt = 2.7
         self.close_volt = 3.7
 
@@ -42,12 +42,12 @@ class sr_driver():
         """
         self.previous_state = self.state
         self.state = self.validate_state(data.data)
+
         rospy.loginfo("Current Desired State: %s", data.data)
         rospy.loginfo("Current State: %s", self.state)
+
         # Ensure you're updating analog read from proper analog pin for your gripper
-        # TODO add the constant, grip volt is what you need
         self.voltage = self.rtde_receive.getStandardAnalogInput0()
-        # self.pressure = self.rtde_receive.getStandardAnalogInput0()
         self.update_robot_state()
 
     def update_robot_state(self):
@@ -58,14 +58,6 @@ class sr_driver():
 
         :return: none
         """
-        '''
-        basic functions to use
-        pin_7_state = self.rtde_receive.getDigitalOutState(7)  #Read the value from the pin, used to confirm pin status
-        self.rtde_io.setStandardDigitalOut(7, True)  #Sets pin 7 to high
-        self.rtde_io.setAnalogOutputCurrent(1, 0.25) #Pin number than output current limit
-        self.pressure = (constant factor) * (self.rtde_receive.GetStandardAnalogInput0())    #get the ADC value and
-                                                                                             #convert to PSI
-        '''
         if (self.state == 'open') and (self.previous_state == 'open'):  # Remain Open
             self.codrive_stop()
         elif (self.state == 'open') and (self.previous_state != 'open'):  # Open Gripper
@@ -75,15 +67,6 @@ class sr_driver():
         elif (self.state == 'closed') and (self.previous_state != 'closed'):  # Close Gripper
             self.codrive_close()
 
-        # Tolerances are 5/10th of a psi for the neutral state
-        # TODO Either strip this functionality out or implement custom logic for it or calc voltage for it
-        elif (self.state == 'neutral') and (not ((-5 < self.pressure) and (self.pressure < 5))):  # Move to Neutral
-            self.codrive_stop()
-            pass    # TODO REMOVE OR DONT
-        elif (self.state == 'neutral') and ((-5 < self.pressure) and (self.pressure < 5)):  # Remain Neutral
-            self.codrive_stop()
-            pass    # TODO REMOVE OR DONT
-
     def validate_state(self, desired_state):
         """
         Ensures that the newly given state is valid. Note: Cap sensitive
@@ -91,11 +74,9 @@ class sr_driver():
         :param desired_state: String containing the desired state
         :return: new_state: Returns prior state if invalid desired_state
         """
-        if (desired_state == 'neutral'):
-            return 'neutral'
-        elif (desired_state == 'closed'):
+        if desired_state == 'closed':
             return 'closed'
-        elif (desired_state == 'open'):
+        elif desired_state == 'open':
             return 'open'
         else:
             rospy.logerr("Invalid State Input: %s\tState will remain: %s", desired_state, self.state)
@@ -114,33 +95,38 @@ class sr_driver():
 
     def codrive_open(self):
         """
-        open gripper
+        open gripper - watchdog timer for pump system = counter value * 1 ms
 
         :return: none
         """
         self.rtde_io.setStandardDigitalOut(0, False)
         self.rtde_io.setStandardDigitalOut(1, True)
         self.rtde_io.setStandardDigitalOut(2, True)
-        while self.voltage > self.release_volt:
+        counter = 0
+        while (self.voltage > self.release_volt) and (counter != 100):
+            counter = counter + 1
             rospy.sleep(0.01)
             self.voltage = self.rtde_receive.getStandardAnalogInput0()
+        rospy.sleep(0.1)
+        self.codrive_stop()
 
     def codrive_close(self):
         """
-        close gripper
+        close gripper - watchdog timer for pump system = counter value * 1 ms
 
-        :return:
+        :return: none
         """
         self.rtde_io.setStandardDigitalOut(0, True)
         self.rtde_io.setStandardDigitalOut(1, False)
         self.rtde_io.setStandardDigitalOut(2, True)
-        while self.voltage < self.close_volt:
+        counter = 0
+        while (self.voltage < self.close_volt) and (counter != 100):
+            counter = counter + 1
             rospy.sleep(0.01)
             self.voltage = self.rtde_receive.getStandardAnalogInput0()
-
-    #TODO determine if I want to do this this way
-    def codrive_neutral(self):
-        pass
+            print(type(self.voltage))
+            print(type(self.rtde_receive.getStandardAnalogInput0()))
+        self.codrive_stop()
 
 
 if __name__ == '__main__':
