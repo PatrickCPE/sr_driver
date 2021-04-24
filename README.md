@@ -9,6 +9,8 @@
 
 ## Usage
 
+---
+
 follow installation and dependency instructions
 
 roscore &
@@ -17,10 +19,12 @@ rosrun sr_driver sr_driver.py &
 rostopic pub /sr_gripper std_msgs/String "data: 'open'"
 rostopic pub /sr_gripper std_msgs/String "data: 'closed'"
 
-
 ---
 
 ## Description
+
+---
+
 This package is a ROS Driver for the Soft Robotics MGrip gripper. This package allows you to
 control the grip easier via a ROS node. 
 
@@ -35,15 +39,21 @@ communicating with a UR5 running Version 3.13 of their Polyscope software
 ---
 
 ## Installation
+
+---
 install all the requirements listed in the section below
 
 git clone (this repo) ~/catkin_ws/src/
 cd catkin_ws
 catkin_make
+chmod +x src/sr_driver/scripts/sr_driver
 
-
+---
 
 ## Requirements
+
+---
+
 * ur_rtde python version(https://pypi.org/project/ur-rtde/) (must compile from source with python 2.7 flag if on ubuntu 16. If using python 3 just install via pip.)
 * Python 2.7 or 3
 * ROS Kinetic or Melodic
@@ -53,8 +63,5 @@ catkin_make
 * Sphinx-Common
 * Sphinx-Doc
 
-Ensure that you chmod +x the script
 
 ---
-
-
