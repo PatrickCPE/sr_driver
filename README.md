@@ -2,7 +2,7 @@
 
 ---
 
-! [Soft Robotics Gripper](soft_robotics_repo.jpg)
+<img src="soft_robotics_repo.jpg" alt="Soft Robotics Gripper">
 
 ## Usage
 
@@ -18,7 +18,7 @@ rostopic pub /sr_gripper std_msgs/String "data: 'closed'"
 ---
 
 ## Description
-This package is a simple state machine controller for the Soft Robotics MGrip gripper. This package allows you to
+This package is a ROS Driver for the Soft Robotics MGrip gripper. This package allows you to
 control the grip easier via a ROS node. 
 
 You publish a string with your desired state to the "/sr_gripper" node and this will handle the rest of the logic.
@@ -33,8 +33,8 @@ communicating with a UR5 running Version 3.13 of their Polyscope software
 
 ## Requirements
 * ur_rtde python version(https://pypi.org/project/ur-rtde/) (must compile from source with python 2.7 flag if on ubuntu 16. If using python 3 just install via pip.)
-* Python 2.7
-* ROS Kinetic
+* Python 2.7 or 3
+* ROS Kinetic or Melodic
 
 
 (If you want to regenerate documentation after any modification)
