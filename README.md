@@ -4,6 +4,9 @@
 
 <img src="soft_robotics_repo.jpg" alt="Soft Robotics Gripper">
 
+
+---
+
 ## Usage
 
 follow installation and dependency instructions
@@ -31,13 +34,22 @@ communicating with a UR5 running Version 3.13 of their Polyscope software
 
 ---
 
+## Installation
+install all the requirements listed in the section below
+
+git clone (this repo) ~/catkin_ws/src/
+cd catkin_ws
+catkin_make
+
+
+
 ## Requirements
 * ur_rtde python version(https://pypi.org/project/ur-rtde/) (must compile from source with python 2.7 flag if on ubuntu 16. If using python 3 just install via pip.)
 * Python 2.7 or 3
 * ROS Kinetic or Melodic
 
 
-(If you want to regenerate documentation after any modification)
+(If you want to regenerate documentation after any modification, not really necessary)
 * Sphinx-Common
 * Sphinx-Doc
 
