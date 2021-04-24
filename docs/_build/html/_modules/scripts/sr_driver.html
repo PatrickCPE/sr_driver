@@ -1,0 +1,215 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>scripts.sr_driver &#8212; sr_driver 1.0 documentation</title>
+    <link rel="stylesheet" href="../../_static/groundwork.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="../../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">sr_driver 1.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" accesskey="U">Module code</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for scripts.sr_driver</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python3</span>
+<span class="c1"># Note this will be &#39;python&#39; if running on ubuntu 16</span>
+
+<span class="kn">import</span> <span class="nn">rospy</span>
+<span class="kn">from</span> <span class="nn">std_msgs.msg</span> <span class="k">import</span> <span class="n">String</span>
+<span class="kn">import</span> <span class="nn">rtde_io</span>
+<span class="kn">import</span> <span class="nn">rtde_receive</span>
+
+
+<div class="viewcode-block" id="sr_driver"><a class="viewcode-back" href="../../scripts.html#scripts.sr_driver.sr_driver">[docs]</a><span class="k">class</span> <span class="nc">sr_driver</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Basic Soft Robotics Gripper Class Wrapper - controls Gripper state machine via received state command and pressure</span>
+<span class="sd">    reading from the UR robot itself.</span>
+
+<span class="sd">    If /sr_gripper receives &quot;closed&quot; system closes, if it receives &quot;open&quot; system opens</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">state</span> <span class="o">=</span> <span class="s1">&#39;neutral&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">previous_state</span> <span class="o">=</span> <span class="s1">&#39;neutral&#39;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">gripper_sub</span> <span class="o">=</span> <span class="n">rospy</span><span class="o">.</span><span class="n">Subscriber</span><span class="p">(</span><span class="s2">&quot;sr_gripper&quot;</span><span class="p">,</span> <span class="n">String</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">desired_state_sub_cb</span><span class="p">)</span>
+
+        <span class="c1"># Testing IPs</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rtde_io</span> <span class="o">=</span> <span class="n">rtde_io</span><span class="o">.</span><span class="n">RTDEIOInterface</span><span class="p">(</span><span class="s2">&quot;10.0.0.65&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rtde_receive</span> <span class="o">=</span> <span class="n">rtde_receive</span><span class="o">.</span><span class="n">RTDEReceiveInterface</span><span class="p">(</span><span class="s2">&quot;10.0.0.65&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Real System IPs</span>
+        <span class="c1"># self.rtde_io = rtde_io.RTDEIOInterface(&quot;10.0.9.3&quot;)</span>
+        <span class="c1"># self.rtde_receive = rtde_receive.RTDEReceiveInterface(&quot;10.0.9.3&quot;)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">voltage</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">rtde_receive</span><span class="o">.</span><span class="n">getStandardAnalogInput0</span><span class="p">()</span>
+
+        <span class="c1"># ADC values for the gripper states</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">release_volt</span> <span class="o">=</span> <span class="mf">2.7</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">close_volt</span> <span class="o">=</span> <span class="mf">3.7</span>
+
+<div class="viewcode-block" id="sr_driver.desired_state_sub_cb"><a class="viewcode-back" href="../../scripts.html#scripts.sr_driver.sr_driver.desired_state_sub_cb">[docs]</a>    <span class="k">def</span> <span class="nf">desired_state_sub_cb</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Callback updates local desired state</span>
+
+<span class="sd">        :param data: std_msgs.msg.String</span>
+<span class="sd">        :return: none</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">previous_state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">state</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">validate_state</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+
+        <span class="n">rospy</span><span class="o">.</span><span class="n">loginfo</span><span class="p">(</span><span class="s2">&quot;Current Desired State: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">data</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+        <span class="n">rospy</span><span class="o">.</span><span class="n">loginfo</span><span class="p">(</span><span class="s2">&quot;Current State: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">state</span><span class="p">)</span>
+
+        <span class="c1"># Ensure you&#39;re updating analog read from proper analog pin for your gripper</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">voltage</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">rtde_receive</span><span class="o">.</span><span class="n">getStandardAnalogInput0</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">update_robot_state</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="sr_driver.update_robot_state"><a class="viewcode-back" href="../../scripts.html#scripts.sr_driver.sr_driver.update_robot_state">[docs]</a>    <span class="k">def</span> <span class="nf">update_robot_state</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Updates the digital outputs on the robot according to the desired state and the pressure sensed via the analog</span>
+<span class="sd">        input pins. Relies on the max &amp; min pressures and the current pressure. Decision made based upon current</span>
+<span class="sd">        pressure and the current set state</span>
+
+<span class="sd">        :return: none</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">state</span> <span class="o">==</span> <span class="s1">&#39;open&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">previous_state</span> <span class="o">==</span> <span class="s1">&#39;open&#39;</span><span class="p">):</span>  <span class="c1"># Remain Open</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">codrive_stop</span><span class="p">()</span>
+        <span class="k">elif</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">state</span> <span class="o">==</span> <span class="s1">&#39;open&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">previous_state</span> <span class="o">!=</span> <span class="s1">&#39;open&#39;</span><span class="p">):</span>  <span class="c1"># Open Gripper</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">codrive_open</span><span class="p">()</span>
+        <span class="k">elif</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">state</span> <span class="o">==</span> <span class="s1">&#39;closed&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">previous_state</span> <span class="o">==</span> <span class="s1">&#39;closed&#39;</span><span class="p">):</span>  <span class="c1"># Remain Closed</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">codrive_stop</span><span class="p">()</span>
+        <span class="k">elif</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">state</span> <span class="o">==</span> <span class="s1">&#39;closed&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">previous_state</span> <span class="o">!=</span> <span class="s1">&#39;closed&#39;</span><span class="p">):</span>  <span class="c1"># Close Gripper</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">codrive_close</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="sr_driver.validate_state"><a class="viewcode-back" href="../../scripts.html#scripts.sr_driver.sr_driver.validate_state">[docs]</a>    <span class="k">def</span> <span class="nf">validate_state</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">desired_state</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Ensures that the newly given state is valid. Note: Cap sensitive</span>
+
+<span class="sd">        :param desired_state: String containing the desired state</span>
+<span class="sd">        :return: new_state: Returns prior state if invalid desired_state</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">desired_state</span> <span class="o">==</span> <span class="s1">&#39;closed&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s1">&#39;closed&#39;</span>
+        <span class="k">elif</span> <span class="n">desired_state</span> <span class="o">==</span> <span class="s1">&#39;open&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s1">&#39;open&#39;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">rospy</span><span class="o">.</span><span class="n">logerr</span><span class="p">(</span><span class="s2">&quot;Invalid State Input: </span><span class="si">%s</span><span class="se">\t</span><span class="s2">State will remain: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">desired_state</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">state</span><span class="p">)</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">state</span>  <span class="c1"># Returns the previous state, no update made</span></div>
+
+    <span class="c1"># Consult state diagram for info on these 3 functions</span>
+<div class="viewcode-block" id="sr_driver.codrive_stop"><a class="viewcode-back" href="../../scripts.html#scripts.sr_driver.sr_driver.codrive_stop">[docs]</a>    <span class="k">def</span> <span class="nf">codrive_stop</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        freeze gripper in current state</span>
+
+<span class="sd">        :return: none</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rtde_io</span><span class="o">.</span><span class="n">setStandardDigitalOut</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rtde_io</span><span class="o">.</span><span class="n">setStandardDigitalOut</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rtde_io</span><span class="o">.</span><span class="n">setStandardDigitalOut</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="sr_driver.codrive_open"><a class="viewcode-back" href="../../scripts.html#scripts.sr_driver.sr_driver.codrive_open">[docs]</a>    <span class="k">def</span> <span class="nf">codrive_open</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        open gripper - watchdog timer for pump system = counter value * 1 ms</span>
+
+<span class="sd">        :return: none</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rtde_io</span><span class="o">.</span><span class="n">setStandardDigitalOut</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rtde_io</span><span class="o">.</span><span class="n">setStandardDigitalOut</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rtde_io</span><span class="o">.</span><span class="n">setStandardDigitalOut</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
+        <span class="n">counter</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">while</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">voltage</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">release_volt</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">counter</span> <span class="o">!=</span> <span class="mi">100</span><span class="p">):</span>
+            <span class="n">counter</span> <span class="o">=</span> <span class="n">counter</span> <span class="o">+</span> <span class="mi">1</span>
+            <span class="n">rospy</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mf">0.01</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">voltage</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">rtde_receive</span><span class="o">.</span><span class="n">getStandardAnalogInput0</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">codrive_stop</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="sr_driver.codrive_close"><a class="viewcode-back" href="../../scripts.html#scripts.sr_driver.sr_driver.codrive_close">[docs]</a>    <span class="k">def</span> <span class="nf">codrive_close</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        close gripper - watchdog timer for pump system = counter value * 1 ms</span>
+
+<span class="sd">        :return: none</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rtde_io</span><span class="o">.</span><span class="n">setStandardDigitalOut</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rtde_io</span><span class="o">.</span><span class="n">setStandardDigitalOut</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rtde_io</span><span class="o">.</span><span class="n">setStandardDigitalOut</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
+        <span class="n">counter</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">while</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">voltage</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">close_volt</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">counter</span> <span class="o">!=</span> <span class="mi">100</span><span class="p">):</span>
+            <span class="n">counter</span> <span class="o">=</span> <span class="n">counter</span> <span class="o">+</span> <span class="mi">1</span>
+            <span class="n">rospy</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mf">0.01</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">voltage</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">rtde_receive</span><span class="o">.</span><span class="n">getStandardAnalogInput0</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">codrive_stop</span><span class="p">()</span></div></div>
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="n">rospy</span><span class="o">.</span><span class="n">init_node</span><span class="p">(</span><span class="s1">&#39;sr_gripper&#39;</span><span class="p">,</span> <span class="n">anonymous</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">my_driver</span> <span class="o">=</span> <span class="n">sr_driver</span><span class="p">()</span>
+    <span class="n">rospy</span><span class="o">.</span><span class="n">spin</span><span class="p">()</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">sr_driver 1.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" >Module code</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2021, Patrick Hoey.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.5.
+    </div>
+  </body>
+</html>
